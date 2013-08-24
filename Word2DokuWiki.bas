@@ -1,8 +1,15 @@
-'Please do not delete this section
+' Please do not delete this section
 '
-'Developed by Tania Hew 07/2008
+' @version 1.0
+' Developed by Tania Hew 07/2008
 '
-'
+' @author Matthew
+' @version 2.0
+' 1. support running in word 2010
+' 2. suport support Dokuwiki 2013-5-10(Weatherwax)
+' 3. fix:
+'     3.1 hyperlinks: use '[[' and ']]'
+'     3.2 Word styles: use wdStyleNormal instead of "standard"(language dependant)
 
 
 'Cancel Macro'
@@ -27,22 +34,30 @@ Private Sub ConvertButton_Click()
     
     DokuWikiEscapeChars
     
+    DokuWikiConvertEndOfLine
+        
 '    // 2011-06-20 by Taggic
     DokuWikiConvertFootnotes
     DokuWikiConvertHyperlinks
+    
     DokuWikiConvertH1
     DokuWikiConvertH2
     DokuWikiConvertH3
     DokuWikiConvertH4
     DokuWikiConvertH5
+    
     DokuWikiConvertItalic
     DokuWikiConvertBold
     DokuWikiConvertUnderline
     DokuWikiConvertStrikeThrough
     DokuWikiConvertSuperscript
     DokuWikiConvertSubscript
+    
     DokuWikiConvertLists
     DokuWikiConvertTable
+    
+    DokuWikiPostEOL
+    
     UndoDokuWikiEscapeChars
     
     DokuWikiSaveAsHTMLAndConvertImages
@@ -50,6 +65,7 @@ Private Sub ConvertButton_Click()
     MovePNGFilesToNewFolder
     MoveGIFFilesToNewFolder
     removeImages
+    
     ActiveDocument.Content.Copy 'Copy to clipboard
     
     Application.ScreenUpdating = True
@@ -391,8 +407,8 @@ Private Sub DokuWikiConvertLists()
              If .ListFormat.ListType = wdListBullet Then
                  .InsertBefore "*"
              Else
-                  .InsertBefore "-"
-              End If
+                 .InsertBefore "-"
+             End If
             For i = 1 To .ListFormat.ListLevelNumber
                    .InsertBefore "  "
            Next i
@@ -429,8 +445,8 @@ Private Sub DokuWikiConvertHyperlinks()
             Dim addr As String
             addr = .Address
             .Delete
-            .Range.InsertBefore "["
-            .Range.InsertAfter "-" & addr & "]"
+            .Range.InsertBefore "[[" & addr & "|"
+            .Range.InsertAfter "]]"
         End With
     Next i
 End Sub
@@ -441,7 +457,7 @@ Private Sub ReplaceQuotes()
     quotes = Options.AutoFormatAsYouTypeReplaceQuotes
     Options.AutoFormatAsYouTypeReplaceQuotes = False
     
-    ' Below 4 lines maybe not suit for Chinese
+    ' Below 4 lines may not suit for Chinese
     'ReplaceString ChrW(8220), """"
     'ReplaceString ChrW(8221), """"
     'ReplaceString "бо", " '"
@@ -465,6 +481,43 @@ Private Sub DokuWikiEscapeChars()
     EscapeCharacter "|"
     EscapeCharacter "'"
 End Sub
+
+' Add "\\" at end of each line. '
+' TODO: newline after headings and list ard not needed.
+Private Sub DokuWikiConvertEndOfLine()
+    ' ReplaceString "^p", " \\^p"
+    findStr = "^p"
+    replacementStr = " \\^p"
+    
+    Selection.Find.ClearFormatting
+    Selection.Find.Replacement.ClearFormatting
+    With Selection.Find
+        .Style = ActiveDocument.Styles(wdStyleNormal)
+        .Text = findStr
+        .Replacement.Text = replacementStr
+        .Forward = True
+        .Wrap = wdFindContinue
+        .Format = True
+        
+        .MatchCase = False
+        .MatchWholeWord = False
+        .MatchWildcards = False
+        .MatchSoundsLike = False
+        .MatchAllWordForms = False
+    End With
+    Selection.Find.Execute Replace:=wdReplaceAll
+End Sub
+
+' post processing:
+' DokuWikiConvertEndOfLine is called before heading and other format converted.
+' bold, italic, underline, and strikethrough are processed after, so "\\" is before these signs.
+' here, I change them manually.
+Private Sub DokuWikiPostEOL()
+    ReplaceString "\\**", " **\\"
+    ReplaceString "\\//", " //\\"
+    ReplaceString "\\__", " __\\"
+    ReplaceString "\\</del>", " </del>\\"
+End Sub
  
 Private Function ReplaceHeading(styleHeading As String, headerPrefix As String)
     Dim normalStyle As Style
@@ -478,7 +531,6 @@ Private Function ReplaceHeading(styleHeading As String, headerPrefix As String)
         .Style = ActiveDocument.Styles(styleHeading)
         .Text = ""
 
-      
         .Format = True
         .MatchCase = False
         .MatchWholeWord = False
@@ -514,6 +566,7 @@ Private Sub DokuWikiConvertTable()
   Dim TotTables As Long
   Do While ActiveDocument.Tables.Count() > 0
     ActiveDocument.Tables(1).Range.Select
+    
     Selection.Find.ClearFormatting
     Selection.Find.Replacement.ClearFormatting
     With Selection.Find
@@ -529,6 +582,7 @@ Private Sub DokuWikiConvertTable()
       .MatchAllWordForms = False
     End With
     Selection.Find.Execute Replace:=wdReplaceAll
+    
     Selection.Find.ClearFormatting
     Selection.Find.Replacement.ClearFormatting
     With Selection.Find
@@ -544,9 +598,11 @@ Private Sub DokuWikiConvertTable()
       .MatchAllWordForms = False
     End With
     Selection.Find.Execute Replace:=wdReplaceAll
+    
     Selection.Find.ClearFormatting
     Application.DefaultTableSeparator = "|"
     Selection.Rows.ConvertToText Separator:=wdSeparateByDefaultListSeparator, NestedTables:=True
+    
     Selection.Find.ClearFormatting
     Selection.Find.Replacement.ClearFormatting
     With Selection.Find
@@ -564,6 +620,7 @@ Private Sub DokuWikiConvertTable()
     Selection.Find.Execute Replace:=wdReplaceAll
     Selection.InsertBefore ("|")
     Selection.InsertParagraphAfter
+    
     Selection.Find.ClearFormatting
     Selection.Find.Replacement.ClearFormatting
     With Selection.Find
@@ -579,6 +636,7 @@ Private Sub DokuWikiConvertTable()
       .MatchAllWordForms = False
     End With
     Selection.Find.Execute Replace:=wdReplaceAll
+    
     Selection.Find.ClearFormatting
     Selection.Find.Replacement.ClearFormatting
     With Selection.Find
@@ -594,6 +652,7 @@ Private Sub DokuWikiConvertTable()
       .MatchAllWordForms = False
     End With
     Selection.Find.Execute Replace:=wdReplaceAll
+    
     Selection.Find.ClearFormatting
     Selection.Find.Replacement.ClearFormatting
     With Selection.Find
@@ -609,6 +668,7 @@ Private Sub DokuWikiConvertTable()
       .MatchAllWordForms = False
     End With
     Selection.Find.Execute Replace:=wdReplaceAll
+    
     With Selection.Find
       .Text = "||"
       .Replacement.Text = "|  |"
@@ -622,6 +682,7 @@ Private Sub DokuWikiConvertTable()
       .MatchAllWordForms = False
     End With
     Selection.Find.Execute Replace:=wdReplaceAll
+    
     Selection.Find.ClearFormatting
     Selection.Find.Replacement.ClearFormatting
     With Selection.Find
@@ -637,6 +698,7 @@ Private Sub DokuWikiConvertTable()
       .MatchAllWordForms = False
     End With
     Selection.Find.Execute Replace:=wdReplaceAll
+    
     With Selection.Find
       .Text = "| |"
       .Replacement.Text = "|  |"
@@ -650,6 +712,8 @@ Private Sub DokuWikiConvertTable()
       .MatchAllWordForms = False
     End With
     Selection.Find.Execute Replace:=wdReplaceAll
+    
+    ' Caption of Table ?
     Selection.Paragraphs(1).Range.Select
     Selection.Find.ClearFormatting
     Selection.Find.Replacement.ClearFormatting
@@ -1098,10 +1162,9 @@ Private Sub AutoCopyToFile()
     
     ' Change SaveAs to SaveAs2. -- Matthew
     ActiveDocument.SaveAs2 FileName:=docName, FileFormat:=wdFormatText, _
-    LockComments:=False, Password:="", AddToRecentFiles:=True, WritePassword _
-    :="", ReadOnlyRecommended:=False, EmbedTrueTypeFonts:=False, _
-    SaveNativePictureFormat:=False, SaveFormsData:=False, SaveAsAOCELetter:= _
-    False
+        LockComments:=False, Password:="", AddToRecentFiles:=True, WritePassword:="", _
+        ReadOnlyRecommended:=False, EmbedTrueTypeFonts:=False, _
+        SaveNativePictureFormat:=False, SaveFormsData:=False, SaveAsAOCELetter:=False
     
 LocalHandler:
         'MsgBox ("There was an error saving the text file. ")
