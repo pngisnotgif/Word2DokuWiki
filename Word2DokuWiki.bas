@@ -1,3 +1,4 @@
+
 ' Please do not delete this section
 '
 ' @version 1.0
@@ -10,6 +11,8 @@
 ' 3. fix:
 '     3.1 hyperlinks: use '[[' and ']]'
 '     3.2 Word styles: use wdStyleNormal instead of "standard"(language dependant)
+'     3.3 newline sign in standard style
+'     3.4 wrong embeded image folder
 
 
 'Cancel Macro'
@@ -825,7 +828,7 @@ Private Sub DokuWikiSaveAsHTMLAndConvertImages()
 
     FileLocation = ActiveDocument.Path + "\" + ActiveDocument.Name
     FileName = GetFilename(ActiveDocument.Name)
-    FolderName = FileName + "_files"
+    FolderName = FileName + ".files"
     
     strFileName = FileName & ".htm"
 
@@ -1028,7 +1031,7 @@ Private Sub DeleteHTMFolder()
     Set FSO = CreateObject("scripting.filesystemobject")
 
     FileName = GetFilename(ActiveDocument.Name)
-    FolderName = FileName + "_files"
+    FolderName = FileName + ".files"
 
     If Right(FolderName, 1) = "\" Then
         FolderName = Left(FolderName, Len(FolderName) - 1)
