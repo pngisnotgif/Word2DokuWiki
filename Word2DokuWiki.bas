@@ -7,9 +7,9 @@
 
 'Cancel Macro'
 Private Sub CancelButton_Click()
-YesLocation.Value = False
-NoLocation.Value = False
-Word2DokuWiki.Hide
+    YesLocation.Value = False
+    NoLocation.Value = False
+    Word2DokuWiki.Hide
 End Sub
 
 'Convert'
@@ -21,13 +21,14 @@ Private Sub ConvertButton_Click()
     FileName = GetFilename(ActiveDocument.Name)
     
     Application.ScreenUpdating = False
+    
     HideRevisions
     ReplaceQuotes
+    
     DokuWikiEscapeChars
     
 '    // 2011-06-20 by Taggic
     DokuWikiConvertFootnotes
-    
     DokuWikiConvertHyperlinks
     DokuWikiConvertH1
     DokuWikiConvertH2
@@ -43,12 +44,14 @@ Private Sub ConvertButton_Click()
     DokuWikiConvertLists
     DokuWikiConvertTable
     UndoDokuWikiEscapeChars
+    
     DokuWikiSaveAsHTMLAndConvertImages
     MoveJPGFilesToNewFolder
     MovePNGFilesToNewFolder
     MoveGIFFilesToNewFolder
     removeImages
     ActiveDocument.Content.Copy 'Copy to clipboard
+    
     Application.ScreenUpdating = True
     AutoCopyToFile
     'ManualCopyToFile
@@ -70,17 +73,17 @@ End Sub
 
 
 Private Sub NoLocation_Click()
-ImageLocation.Locked = True
-ImageLocation.BackColor = &H8000000F
-NoLabel.Visible = True
-YesLabel.Visible = False
+    ImageLocation.Locked = True
+    ImageLocation.BackColor = &H8000000F
+    NoLabel.Visible = True
+    YesLabel.Visible = False
 End Sub
 
 Private Sub YesLocation_Click()
-ImageLocation.Locked = False
-ImageLocation.BackColor = &H80000005
-YesLabel.Visible = True
-NoLabel.Visible = False
+    ImageLocation.Locked = False
+    ImageLocation.BackColor = &H80000005
+    YesLabel.Visible = True
+    NoLabel.Visible = False
 End Sub
 
 Private Sub HideRevisions()
@@ -100,7 +103,7 @@ Private Sub DokuWikiConvertH3()
 End Sub
 
 Private Sub DokuWikiConvertH4()
-        ReplaceHeading wdStyleHeading4, "==="
+    ReplaceHeading wdStyleHeading4, "==="
 End Sub
 
 Private Sub DokuWikiConvertH5()
@@ -146,7 +149,7 @@ Private Sub DokuWikiConvertBold()
                     End If
                 End If
                
-                .Style = ActiveDocument.Styles("Standard")
+                .Style = ActiveDocument.Styles(wdStyleNormal)
                 .Font.Bold = False
             End With
         Loop
@@ -191,7 +194,7 @@ Private Sub DokuWikiConvertItalic()
                     End If
                 End If
                
-                .Style = ActiveDocument.Styles("Standard")
+                .Style = ActiveDocument.Styles(wdStyleNormal)
                 .Font.Italic = False
             End With
         Loop
@@ -236,7 +239,7 @@ Private Sub DokuWikiConvertUnderline()
                     End If
                 End If
                 
-                .Style = ActiveDocument.Styles("Standard")
+                .Style = ActiveDocument.Styles(wdStyleNormal)
                 .Font.Underline = False
             End With
         Loop
@@ -281,7 +284,7 @@ Private Sub DokuWikiConvertStrikeThrough()
                     End If
                 End If
                
-                .Style = ActiveDocument.Styles("Standard")
+                .Style = ActiveDocument.Styles(wdStyleNormal)
                 .Font.StrikeThrough = False
             End With
         Loop
@@ -327,7 +330,7 @@ Private Sub DokuWikiConvertSuperscript()
                     End If
                 End If
                 
-                .Style = ActiveDocument.Styles("Standard")
+                .Style = ActiveDocument.Styles(wdStyleNormal)
                 .Font.Superscript = False
             End With
         Loop
@@ -373,7 +376,7 @@ Private Sub DokuWikiConvertSubscript()
                     End If
                 End If
                
-                .Style = ActiveDocument.Styles("Standard")
+                .Style = ActiveDocument.Styles(wdStyleNormal)
                 .Font.Subscript = False
             End With
         Loop
@@ -437,10 +440,13 @@ Private Sub ReplaceQuotes()
     Dim quotes As Boolean
     quotes = Options.AutoFormatAsYouTypeReplaceQuotes
     Options.AutoFormatAsYouTypeReplaceQuotes = False
-    ReplaceString ChrW(8220), """"
-    ReplaceString ChrW(8221), """"
-    ReplaceString "?, " '"
-    ReplaceString "?, " '"
+    
+    ' Below 4 lines maybe not suit for Chinese
+    'ReplaceString ChrW(8220), """"
+    'ReplaceString ChrW(8221), """"
+    'ReplaceString "¡®", " '"
+    'ReplaceString "¡¯", " '"
+    
     Options.AutoFormatAsYouTypeReplaceQuotes = quotes
 End Sub
  
@@ -715,10 +721,14 @@ End Function
 'Example if file is C:\Documents & Settings\taniah\My Documents\docname.doc, this would
 'return C:\Documents & Settings\taniah\My Documents\docname'
 Private Function GetFilename(ByVal strPath As String) As String
-    GetFilename = ActiveDocument.Path & "\" & ActiveDocument.Name
-  
-    'Strip the .doc from the end
-    GetFilename = Left(GetFilename, Len(GetFilename) - 4)
+    If (ActiveDocument.Path = "") Then
+        GetFilename = "."
+    Else
+        GetFilename = ActiveDocument.Path
+    End If
+     
+    GetFilename = GetFilename & Application.PathSeparator & ActiveDocument.Name
+    
 End Function
 
 'function to get file name only of text document minus extension
@@ -752,12 +762,15 @@ Private Sub DokuWikiSaveAsHTMLAndConvertImages()
     FileLocation = ActiveDocument.Path + "\" + ActiveDocument.Name
     FileName = GetFilename(ActiveDocument.Name)
     FolderName = FileName + "_files"
+    
+    strFileName = FileName & ".htm"
 
-    ActiveDocument.SaveAs FileName:=FileName + ".htm", _
+    ' SaveAs method is deprecated since Word 2010, I change it to SaveAs2
+    ActiveDocument.SaveAs2 FileName:=strFileName, _
                   FileFormat:=wdFormatFilteredHTML, LockComments:=False, Password:="", _
                   AddToRecentFiles:=True, WritePassword:="", ReadOnlyRecommended:=False, _
-                  EmbedTrueTypeFonts:=False, SaveNativePictureFormat:=False, SaveFormsData _
-                  :=False, SaveAsAOCELetter:=False
+                  EmbedTrueTypeFonts:=False, SaveNativePictureFormat:=False, _
+                  SaveFormsData:=False, SaveAsAOCELetter:=False
 
     'Rename all the files with a Unique name
     'strDir = Dir(FileName & "_files\*.jpg")
@@ -1082,7 +1095,9 @@ Private Sub AutoCopyToFile()
     On Error GoTo LocalHandler
     MsgBox ("Any existing text files will be overwritten.")
     'save clipboard content to a text file having same name as Word document
-    ActiveDocument.SaveAs FileName:=docName, FileFormat:=wdFormatText, _
+    
+    ' Change SaveAs to SaveAs2. -- Matthew
+    ActiveDocument.SaveAs2 FileName:=docName, FileFormat:=wdFormatText, _
     LockComments:=False, Password:="", AddToRecentFiles:=True, WritePassword _
     :="", ReadOnlyRecommended:=False, EmbedTrueTypeFonts:=False, _
     SaveNativePictureFormat:=False, SaveFormsData:=False, SaveAsAOCELetter:= _
