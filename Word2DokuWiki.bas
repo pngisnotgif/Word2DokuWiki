@@ -818,6 +818,11 @@ LocalHandler:
     End If
 End Function
 
+Private Function wordMajorVersion()
+    majorStr = Split(Application.Version, ".")(0)
+    wordMajorVersion = Val(majorStr)
+End Function
+
 Private Sub DokuWikiSaveAsHTMLAndConvertImages()
     Dim s As Shape
     Dim FileLocation As String
@@ -831,14 +836,23 @@ Private Sub DokuWikiSaveAsHTMLAndConvertImages()
     FolderName = FileName + ".files"
     
     strFileName = FileName & ".htm"
-
-    ' SaveAs method is deprecated since Word 2010, I change it to SaveAs2
-    ActiveDocument.SaveAs2 FileName:=strFileName, _
-                  FileFormat:=wdFormatFilteredHTML, LockComments:=False, Password:="", _
-                  AddToRecentFiles:=True, WritePassword:="", ReadOnlyRecommended:=False, _
-                  EmbedTrueTypeFonts:=False, SaveNativePictureFormat:=False, _
-                  SaveFormsData:=False, SaveAsAOCELetter:=False
-
+    
+    If wordMajorVersion() >= 14 Then
+        ' Change SaveAs to SaveAs2, since word 2010 (version 14.0) -- Matthew
+        ActiveDocument.SaveAs2 FileName:=strFileName, _
+            FileFormat:=wdFormatFilteredHTML, LockComments:=False, Password:="", _
+            AddToRecentFiles:=True, WritePassword:="", ReadOnlyRecommended:=False, _
+            EmbedTrueTypeFonts:=False, SaveNativePictureFormat:=False, _
+            SaveFormsData:=False, SaveAsAOCELetter:=False
+    Else
+        ' Earlier than word 2010
+        ActiveDocument.SaveAs FileName:=strFileName, _
+            FileFormat:=wdFormatFilteredHTML, LockComments:=False, Password:="", _
+            AddToRecentFiles:=True, WritePassword:="", ReadOnlyRecommended:=False, _
+            EmbedTrueTypeFonts:=False, SaveNativePictureFormat:=False, _
+            SaveFormsData:=False, SaveAsAOCELetter:=False
+    End If
+    
     'Rename all the files with a Unique name
     'strDir = Dir(FileName & "_files\*.jpg")
 
@@ -1163,15 +1177,29 @@ Private Sub AutoCopyToFile()
     MsgBox ("Any existing text files will be overwritten.")
     'save clipboard content to a text file having same name as Word document
     
-    ' Change SaveAs to SaveAs2. -- Matthew
-    ActiveDocument.SaveAs2 FileName:=docName, FileFormat:=wdFormatText, _
-        LockComments:=False, Password:="", AddToRecentFiles:=True, WritePassword:="", _
-        ReadOnlyRecommended:=False, EmbedTrueTypeFonts:=False, _
+    If wordMajorVersion() >= 14 Then
+        ' Change SaveAs to SaveAs2, since word 2010 (version 14.0) -- Matthew
+        ActiveDocument.SaveAs2 FileName:=docName, FileFormat:=wdFormatText, _
+            LockComments:=False, Password:="", AddToRecentFiles:=True, WritePassword:="", _
+            ReadOnlyRecommended:=False, EmbedTrueTypeFonts:=False, _
+            SaveNativePictureFormat:=False, SaveFormsData:=False, SaveAsAOCELetter:=False
+    Else
+        ' Earlier than word 2010
+        ActiveDocument.SaveAs FileName:=docName, FileFormat:=wdFormatText, _
+            LockComments:=False, Password:="", AddToRecentFiles:=True, WritePassword:="", _
+            ReadOnlyRecommended:=False, EmbedTrueTypeFonts:=False, _
         SaveNativePictureFormat:=False, SaveFormsData:=False, SaveAsAOCELetter:=False
+    End If
+        
+        
     
 LocalHandler:
         'MsgBox ("There was an error saving the text file. ")
         'Application.Quit
 
 End Sub
+
+
+
+
 
