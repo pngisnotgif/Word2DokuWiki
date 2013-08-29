@@ -11,7 +11,7 @@
 ' 3. fix:
 '     3.1 hyperlinks: use '[[' and ']]'
 '     3.2 Word styles: use wdStyleNormal instead of "standard"(language dependant)
-'     3.3 newline sign in standard style
+'     3.3 newline sign in normal style
 '     3.4 wrong embeded image folder
 
 
@@ -35,6 +35,7 @@ Private Sub ConvertButton_Click()
     HideRevisions
     ReplaceQuotes
     
+    splitLeadingSpace
     DokuWikiEscapeChars
     
     DokuWikiConvertEndOfLine
@@ -168,7 +169,7 @@ Private Sub DokuWikiConvertBold()
                     End If
                 End If
                
-                .Style = ActiveDocument.Styles(wdStyleNormal)
+                .style = ActiveDocument.Styles(wdStyleNormal)
                 .Font.Bold = False
             End With
         Loop
@@ -213,7 +214,7 @@ Private Sub DokuWikiConvertItalic()
                     End If
                 End If
                
-                .Style = ActiveDocument.Styles(wdStyleNormal)
+                .style = ActiveDocument.Styles(wdStyleNormal)
                 .Font.Italic = False
             End With
         Loop
@@ -258,7 +259,7 @@ Private Sub DokuWikiConvertUnderline()
                     End If
                 End If
                 
-                .Style = ActiveDocument.Styles(wdStyleNormal)
+                .style = ActiveDocument.Styles(wdStyleNormal)
                 .Font.Underline = False
             End With
         Loop
@@ -303,7 +304,7 @@ Private Sub DokuWikiConvertStrikeThrough()
                     End If
                 End If
                
-                .Style = ActiveDocument.Styles(wdStyleNormal)
+                .style = ActiveDocument.Styles(wdStyleNormal)
                 .Font.StrikeThrough = False
             End With
         Loop
@@ -349,7 +350,7 @@ Private Sub DokuWikiConvertSuperscript()
                     End If
                 End If
                 
-                .Style = ActiveDocument.Styles(wdStyleNormal)
+                .style = ActiveDocument.Styles(wdStyleNormal)
                 .Font.Superscript = False
             End With
         Loop
@@ -395,7 +396,7 @@ Private Sub DokuWikiConvertSubscript()
                     End If
                 End If
                
-                .Style = ActiveDocument.Styles(wdStyleNormal)
+                .style = ActiveDocument.Styles(wdStyleNormal)
                 .Font.Subscript = False
             End With
         Loop
@@ -485,9 +486,13 @@ Private Sub DokuWikiEscapeChars()
     EscapeCharacter "'"
 End Sub
 
-' Add "\\" at end of each line. '
+' split leading space, and not change them into style of source code
+Private Sub splitLeadingSpace()
+    ReplaceString "^p^w", "^p"
+End Sub
+
 ' TODO: newline after headings and list ard not needed.
-Private Sub DokuWikiConvertEndOfLine()
+Private Sub convertEOLForStyle(style)
     ' ReplaceString "^p", " \\^p"
     findStr = "^p"
     replacementStr = " \\^p"
@@ -495,7 +500,7 @@ Private Sub DokuWikiConvertEndOfLine()
     Selection.Find.ClearFormatting
     Selection.Find.Replacement.ClearFormatting
     With Selection.Find
-        .Style = ActiveDocument.Styles(wdStyleNormal)
+        .style = ActiveDocument.Styles(style)
         .Text = findStr
         .Replacement.Text = replacementStr
         .Forward = True
@@ -511,6 +516,14 @@ Private Sub DokuWikiConvertEndOfLine()
     Selection.Find.Execute Replace:=wdReplaceAll
 End Sub
 
+' Add "\\" at end of each line. '
+Private Sub DokuWikiConvertEndOfLine()
+    convertEOLForStyle (wdStylePlainText)
+    convertEOLForStyle (wdStyleNormal)
+    convertEOLForStyle (wdStyleBodyText)
+    convertEOLForStyle (wdStyleHtmlNormal)
+End Sub
+
 ' post processing:
 ' DokuWikiConvertEndOfLine is called before heading and other format converted.
 ' bold, italic, underline, and strikethrough are processed after, so "\\" is before these signs.
@@ -523,7 +536,7 @@ Private Sub DokuWikiPostEOL()
 End Sub
  
 Private Function ReplaceHeading(styleHeading As String, headerPrefix As String)
-    Dim normalStyle As Style
+    Dim normalStyle As style
     Set normalStyle = ActiveDocument.Styles(wdStyleNormal)
    
     ActiveDocument.Select
@@ -531,7 +544,7 @@ Private Function ReplaceHeading(styleHeading As String, headerPrefix As String)
     With Selection.Find
    
         .ClearFormatting
-        .Style = ActiveDocument.Styles(styleHeading)
+        .style = ActiveDocument.Styles(styleHeading)
         .Text = ""
 
         .Format = True
@@ -559,7 +572,7 @@ Private Function ReplaceHeading(styleHeading As String, headerPrefix As String)
                    .InsertBefore vbCr
                    .InsertAfter headerPrefix
                End If
-               .Style = normalStyle
+               .style = normalStyle
            End With
        Loop
    End With
